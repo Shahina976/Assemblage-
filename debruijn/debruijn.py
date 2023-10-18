@@ -248,14 +248,28 @@ def get_sink_nodes(graph):
 
 
 def get_contigs(graph, starting_nodes, ending_nodes):
-    """Extract the contigs from the graph
+    """Extract the contigs from the graph.
 
-    :param graph: (nx.DiGraph) A directed graph object 
-    :param starting_nodes: (list) A list of nodes without predecessors
-    :param ending_nodes: (list) A list of nodes without successors
-    :return: (list) List of [contiguous sequence and their length]
+    :param graph: A directed graph object (nx.DiGraph).
+    :param starting_nodes: A list of nodes without predecessors.
+    :param ending_nodes: A list of nodes without successors.
+    :return: List of tuples, each containing a contiguous sequence and its length.
     """
-    pass
+    contigs = []
+
+    for start_node in starting_nodes:
+        for end_node in ending_nodes:
+            if nx.has_path(graph, start_node, end_node):
+                paths = nx.all_simple_paths(graph, source=start_node, target=end_node)
+                for path in paths:
+                    contig = path[0]
+                    for i in range(1, len(path)):
+                        contig += path[i][-1]
+                    contig_length = len(contig)
+                    contigs.append((contig, contig_length))
+    return contigs
+
+
 
 def save_contigs(contigs_list, output_file):
     """Write all contigs in fasta format
@@ -343,10 +357,17 @@ def main(): # pragma: no cover
     # plt.close
 
     # 5) et 6) fonction get_starting_nodes et get_sink_nodes
-    entrance_nodes = get_starting_nodes(debruijn_graph)
-    print("entrance nodes : ", entrance_nodes)
-    output_nodes = get_sink_nodes(debruijn_graph)
-    print("output nodes : ", output_nodes)
+    starting_nodes = get_starting_nodes(debruijn_graph)
+    print("entrance nodes : ", starting_nodes)
+    ending_nodes = get_sink_nodes(debruijn_graph)
+    print("output nodes : ", ending_nodes)
+    print("")
+
+    # 7) fonction get_contigs
+    contigs = get_contigs(debruijn_graph, starting_nodes, ending_nodes)
+    for contig, length in contigs : 
+        print(f"Contig : {contig}, Longueur : {length}")
+        print("")
 
 
 if __name__ == '__main__': # pragma: no cover
