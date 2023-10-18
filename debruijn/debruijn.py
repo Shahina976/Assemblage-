@@ -162,7 +162,17 @@ def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
     :param delete_sink_node: (boolean) True->We remove the last node of a path
     :return: (nx.DiGraph) A directed graph object
     """
-    pass
+    for path in path_list:
+        if not path:
+            continue
+        if delete_entry_node and delete_sink_node: 
+            graph.remove_nodes_from(path)
+        elif delete_entry_node:
+            graph.remove_nodes_from(path[:-1])
+        elif delete_sink_node:
+            graph.remove_nodes_from(path[1:])
+        else:
+            graph.remove_nodes_from(path[1:-1])
 
 
 def select_best_path(graph, path_list, path_length, weight_avg_list, 
@@ -376,6 +386,12 @@ def main(): # pragma: no cover
 
     # 8) fonction save_contigs
     save_contigs(contigs, "contigs.fasta")
+
+    # 9) fonction remove_paths
+    remove_paths(debruijn_graph, )
+
+    def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
+
 
 
 if __name__ == '__main__': # pragma: no cover
