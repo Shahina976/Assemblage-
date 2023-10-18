@@ -272,12 +272,17 @@ def get_contigs(graph, starting_nodes, ending_nodes):
 
 
 def save_contigs(contigs_list, output_file):
-    """Write all contigs in fasta format
+    """Write contigs to a file.
 
-    :param contig_list: (list) List of [contiguous sequence and their length]
-    :param output_file: (str) Path to the output file
+    :param output_file: The path to the output file.
+    :param contigs_list: List of tuples, each containing a contig and its length.
     """
-    pass
+    with open(output_file, 'w') as output:
+        for i, (contig, length) in enumerate(contigs_list):
+            header = f">contig_{i} len={length}\n"
+            formatted_contig = textwrap.fill(contig, width=80)
+            output.write(header)
+            output.write(formatted_contig + '\n')
 
 
 def draw_graph(graph, graphimg_file): # pragma: no cover
@@ -368,6 +373,9 @@ def main(): # pragma: no cover
     for contig, length in contigs : 
         print(f"Contig : {contig}, Longueur : {length}")
         print("")
+
+    # 8) fonction save_contigs
+    save_contigs(contigs, "contigs.fasta")
 
 
 if __name__ == '__main__': # pragma: no cover
