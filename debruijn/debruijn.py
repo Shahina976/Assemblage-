@@ -75,13 +75,21 @@ def get_arguments(): # pragma: no cover
     return parser.parse_args()
 
 
+
+
 def read_fastq(fastq_file):
     """Extract reads from fastq files.
 
     :param fastq_file: (str) Path to the fastq file.
     :return: A generator object that iterate the read sequences. 
     """
-    pass
+
+    with open(fastq_file, "r") as file:
+        for line in file:
+            yield(next(file).strip())
+            next(file)
+            next(file)
+
 
 
 def cut_kmer(read, kmer_size):
@@ -90,16 +98,30 @@ def cut_kmer(read, kmer_size):
     :param read: (str) Sequence of a read.
     :return: A generator object that iterate the kmers of of size kmer_size.
     """
-    pass
+    for i in range(0, len(read) - kmer_size + 1):
+        kmer = read[i:i + kmer_size]
+        yield kmer
+
 
 
 def build_kmer_dict(fastq_file, kmer_size):
-    """Build a dictionnary object of all kmer occurrences in the fastq file
+    """Build a dictionary object of all kmer occurrences in the fastq file.
 
     :param fastq_file: (str) Path to the fastq file.
-    :return: A dictionnary object that identify all kmer occurrences.
+    :param kmer_size: (int) Length of the k-mers.
+    :return: A dictionary object that identifies all kmer occurrences.
     """
-    pass
+    kmer_dict = {}  # Dictionary to store k-mers and their occurrences
+
+    for read in read_fastq(fastq_file):
+        for kmer in cut_kmer(read, kmer_size):
+            if kmer in kmer_dict:
+                kmer_dict[kmer] += 1  # Increment count for existing k-mer
+            else:
+                kmer_dict[kmer] = 1  # Add new k-mer to the dictionary
+
+    return kmer_dict
+
 
 
 def build_graph(kmer_dict):
@@ -108,7 +130,26 @@ def build_graph(kmer_dict):
     :param kmer_dict: A dictionnary object that identify all kmer occurrences.
     :return: A directed graph (nx) of all kmer substring and weight (occurrence).
     """
-    pass
+    # Créer un graphe dirigé
+    graph = nx.DiGraph()
+
+    # Parcourir chaque k-mer et son occurrence dans le dictionnaire
+    for kmer, occurrence in kmer_dict.items():
+        # Extraire le préfixe et le suffixe du k-mer
+        prefix = kmer[:-1]
+        suffix = kmer[1:]
+
+        # Vérifier si le préfixe et le suffixe existent déjà dans le graphe
+        if not graph.has_node(prefix):
+            graph.add_node(prefix)
+        if not graph.has_node(suffix):
+            graph.add_node(suffix)
+
+        # Ajouter un arc dirigé du préfixe au suffixe avec le poids (occurrence)
+        graph.add_edge(prefix, suffix, weight=occurrence)
+
+    return graph
+
 
 
 def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
@@ -182,20 +223,29 @@ def solve_out_tips(graph, ending_nodes):
     pass
 
 def get_starting_nodes(graph):
-    """Get nodes without predecessors
+    """Obtient les nœuds sans prédécesseurs (nœuds d'entrée).
 
-    :param graph: (nx.DiGraph) A directed graph object
-    :return: (list) A list of all nodes without predecessors
+    :param graph: Un objet de graphe dirigé (DiGraph).
+    
+    :return: Une liste de nœuds sans prédécesseurs.
     """
-    pass
+    starting_nodes = [node for node in graph.nodes() if not any(graph.predecessors(node))]
+    return starting_nodes
+
 
 def get_sink_nodes(graph):
-    """Get nodes without successors
+    """Obtient les nœuds de sortie (nœuds sans successeurs).
 
-    :param graph: (nx.DiGraph) A directed graph object
-    :return: (list) A list of all nodes without successors
+    :param graph: Un objet de graphe dirigé (DiGraph).
+    
+    :return: Une liste de nœuds sans successeurs.
     """
-    pass
+    sink_nodes = []
+    for node in graph.nodes():
+        if not any(graph.successors(node)):
+            sink_nodes.append(node)
+    return sink_nodes
+
 
 def get_contigs(graph, starting_nodes, ending_nodes):
     """Extract the contigs from the graph
@@ -256,6 +306,57 @@ def main(): # pragma: no cover
     # if args.graphimg_file:
     #     draw_graph(graph, args.graphimg_file)
 
+        # 1) fonction read_fastq()
+    kmer_size = 7 
+    fastq = read_fastq(args.fastq_file)
+    print(fastq)
+    print("")
+
+    # 2) Lire toutes les séquences du fichier FASTQ et couper avec cut_kmer()
+    for read in fastq:
+        kmer_coupe = list(cut_kmer(read, kmer_size))
+        print(kmer_coupe)
+        print("")
+
+    # 3) fonction dict_kmer
+    dict_kmer = build_kmer_dict(args.fastq_file, kmer_size)
+    print(dict_kmer)
+    print("")
+
+    # 4) fonction igraph
+    # fonction pour construire le graphe de De Bruijn
+    debruijn_graph = build_graph(dict_kmer)
+
+    graph_length = len(debruijn_graph)
+    num_nodes = len(debruijn_graph.nodes)
+    num_edges = len(debruijn_graph.edges)
+
+    print(f"Length of the De Bruijn Graph: {graph_length}")
+    print(f"Number of nodes: {num_nodes}")
+    print(f"Number of edges: {num_edges}")
+    print("")
+    
+    # # affichage du graphe 
+    # pos = nx.spring_layout(debruijn_graph)
+    # nx.draw(debruijn_graph, pos, with_labels = False, node_size = 10, node_color='b', font_size=8)
+    # plt.savefig("igraph.png")
+    # plt.close
+
+    # 5) et 6) fonction get_starting_nodes et get_sink_nodes
+    entrance_nodes = get_starting_nodes(debruijn_graph)
+    print("entrance nodes : ", entrance_nodes)
+    output_nodes = get_sink_nodes(debruijn_graph)
+    print("output nodes : ", output_nodes)
+
 
 if __name__ == '__main__': # pragma: no cover
     main()
+
+
+
+
+
+
+
+
+
